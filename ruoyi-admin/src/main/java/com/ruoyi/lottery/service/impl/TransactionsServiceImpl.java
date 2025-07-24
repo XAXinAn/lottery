@@ -1,5 +1,6 @@
 package com.ruoyi.lottery.service.impl;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -110,21 +111,50 @@ public class TransactionsServiceImpl implements ITransactionsService
      */
     @Override
     public List<Transactions> lottery(List<Prize> prizes) {
-        int size = 0;
-        int num = 0;
-        int budget = 0;
-        //取出所有的交易记录
-        List<Transactions> transactions =  transactionsMapper.selectAllTransactions();
-        //根据金额区间分组
-        List<List<Transactions>> transactionsGroupbyAmountRange= new ArrayList<>();
-        for (Prize prize : prizes) {
-            transactionsGroupbyAmountRange.add(transactionsMapper.selectTransactionsByAmountRange(prize));
-        }
-        for (List<Transactions> transactionsList : transactionsGroupbyAmountRange) {
-            List<Transactions> shuffledList = new ArrayList<>(transactionsList);
-            Collections.shuffle(shuffledList);
-        }
+        //获得当前的轮次
+        int time = transactionsMapper.getMaxTime() + 1;
+        if(time == 1) {
+            int size = prizes.size();
+            //取出所有的交易记录
+//        List<Transactions> transactions =  transactionsMapper.selectAllTransactions();
+            //根据金额区间分组
+            List<List<Transactions>> transactionsGroupbyAmountRange = new ArrayList<>();
 
-        return transactionsGroupbyAmountRange.get(0);
+            for (Prize prize : prizes) {
+                //创建返回值对象
+                List<Transactions> result = new ArrayList<>();
+                List<BigDecimal> billAmts = new ArrayList<>();
+                //取出金额区间内的交易记录
+                List<Transactions> transactionsList = transactionsMapper.selectTransactionsByAmountRange(prize);
+                //随机打乱交易记录
+                do {
+                    List<Transactions> shuffledList = new ArrayList<>(transactionsList);
+                    Collections.shuffle(shuffledList);
+                    int cnt = 0;
+                    for (int i = 0; i < transactionsList.size() && cnt < prize.getNum(); i++) {
+                        Collections.shuffle(shuffledList);
+                        Transactions transaction = shuffledList.get(0);
+                        //判断是否符合中奖 客户内码不存在于所有中奖纪录 网点号不存在于本次中奖记录
+                        if (!transactionsMapper.existsCust(transaction.getCustIsn())) {
+
+                        }
+                    }
+                } while (true);
+            }
+            return null;
+        }
+    }
+
+    //打印billAments内的金额
+    public void print(List<BigDecimal> billAmts){
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < billAmts.size(); i++) {
+            sb.append(billAmts.get(i));
+            if (i < billAmts.size() - 1) {
+                sb.append(", ");
+            }
+        }
+        String result = sb.toString();
+        System.out.println(result);
     }
 }

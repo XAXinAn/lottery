@@ -32,6 +32,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </where>
     </select>
 
+    <select id="getMaxTime" resultType="int">
+        SELECT COALESCE(MAX(time), 0) AS max_time FROM win_transactions
+    </select>
+
+    <select id="existsCust" parameterType="string" resultType="boolean">
+        SELECT CASE WHEN EXISTS (
+            SELECT 1 FROM transactions WHERE cust_isn = #{custIsn}
+        ) THEN TRUE ELSE FALSE END
+    </select>
+
     <select id="selectTransactionsList" parameterType="Transactions" resultMap="TransactionsResult">
         <include refid="selectTransactionsVo"/>
         <where>

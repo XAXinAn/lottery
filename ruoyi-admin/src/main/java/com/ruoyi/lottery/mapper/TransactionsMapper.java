@@ -75,4 +75,14 @@ public interface TransactionsMapper
      * @return 交易记录集合
      */
     public List<Transactions> selectTransactionsByAmountRange(Prize prize);
+
+    /**
+     *获取win_transactions表中的最大轮次
+     *
+     * @return 最大轮次
+     */
+    public int getMaxTime();
+
+
+    public boolean existsCust(String custIsn);
 }
