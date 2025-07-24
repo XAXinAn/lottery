@@ -3,7 +3,7 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.lottery.mapper.TransactionsMapper">
-    
+
     <resultMap type="Transactions" id="TransactionsResult">
         <result property="acctnbr"    column="acctnbr"    />
         <result property="inpDate"    column="inp_date"    />
@@ -20,9 +20,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         select acctnbr, inp_date, inp_time, xtranno, bill_amt, org1_code, org_no, cust_isn, card_status_txt from transactions
     </sql>
 
+    <select id="selectAllTransactions" resultMap="TransactionsResult">
+        <include refid="selectTransactionsVo"/>
+    </select>
+
+    <select id="selectTransactionsByAmountRange" parameterType="Prize" resultMap="TransactionsResult">
+        <include refid="selectTransactionsVo"/>
+        <where>
+            <if test="minAmount != null"> and bill_amt >= #{minAmount}</if>
+            <if test="maxAmount != null"> and bill_amt &lt; #{maxAmount}</if>
+        </where>
+    </select>
+
     <select id="selectTransactionsList" parameterType="Transactions" resultMap="TransactionsResult">
         <include refid="selectTransactionsVo"/>
-        <where>  
+        <where>
             <if test="acctnbr != null "> and acctnbr = #{acctnbr}</if>
             <if test="inpDate != null "> and inp_date = #{inpDate}</if>
             <if test="inpTime != null "> and inp_time = #{inpTime}</if>
@@ -34,7 +46,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="cardStatusTxt != null  and cardStatusTxt != ''"> and card_status_txt = #{cardStatusTxt}</if>
         </where>
     </select>
-    
+
     <select id="selectTransactionsByAcctnbr" parameterType="Long" resultMap="TransactionsResult">
         <include refid="selectTransactionsVo"/>
         where acctnbr = #{acctnbr}
@@ -86,7 +98,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteTransactionsByAcctnbrs" parameterType="String">
-        delete from transactions where acctnbr in 
+        delete from transactions where acctnbr in
         <foreach item="acctnbr" collection="array" open="(" separator="," close=")">
             #{acctnbr}
         </foreach>

@@ -124,6 +124,7 @@ public class TransactionsServiceImpl implements ITransactionsService
             List<Transactions> shuffledList = new ArrayList<>(transactionsList);
             Collections.shuffle(shuffledList);
         }
+
         return transactionsGroupbyAmountRange.get(0);
     }
 }

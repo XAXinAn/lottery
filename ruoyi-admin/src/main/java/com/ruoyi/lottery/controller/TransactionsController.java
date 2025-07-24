@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
+
+import com.ruoyi.lottery.domain.Prize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -106,14 +108,14 @@ public class TransactionsController extends BaseController
 
     @GetMapping("/lottery")
     public AjaxResult lottery() {
-        List<Transactions> transactionsList = new ArrayList<>();
-        Transactions transaction = new Transactions(9234167L,20250117L,19451778L,731282L, BigDecimal.valueOf(66.3),"966230","966230","7dcee2c765c9b735ded5b1c21e49a566","正常");
-        transactionsList.add(transaction);
-//        List<Prize> prizes = new ArrayList<>();
-//        prizes.add(new Prize(5,50,35,700));
-//        prizes.add(new Prize(50,100,10,800));
-//        prizes.add(new Prize(100,800,5,1500));
-//        List<Transactions> transactionsList = transactionsService.lottery(prizes);
+//        List<Transactions> transactionsList = new ArrayList<>();
+//        Transactions transaction = new Transactions(9234167L,20250117L,19451778L,731282L, BigDecimal.valueOf(66.3),"966230","966230","7dcee2c765c9b735ded5b1c21e49a566","正常");
+//        transactionsList.add(transaction);
+        List<Prize> prizes = new ArrayList<>();
+        prizes.add(new Prize(5,50,35,700));
+        prizes.add(new Prize(50,100,10,800));
+        prizes.add(new Prize(100,800,5,1500));
+        List<Transactions> transactionsList = transactionsService.lottery(prizes);
         return AjaxResult.success(transactionsList);
     }
 }
