@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.lottery.mapper.TransactionsMapper">
+    
+    <resultMap type="Transactions" id="TransactionsResult">
+        <result property="acctnbr"    column="acctnbr"    />
+        <result property="inpDate"    column="inp_date"    />
+        <result property="inpTime"    column="inp_time"    />
+        <result property="xtranno"    column="xtranno"    />
+        <result property="billAmt"    column="bill_amt"    />
+        <result property="org1Code"    column="org1_code"    />
+        <result property="orgNo"    column="org_no"    />
+        <result property="custIsn"    column="cust_isn"    />
+        <result property="cardStatusTxt"    column="card_status_txt"    />
+    </resultMap>
+
+    <sql id="selectTransactionsVo">
+        select acctnbr, inp_date, inp_time, xtranno, bill_amt, org1_code, org_no, cust_isn, card_status_txt from transactions
+    </sql>
+
+    <select id="selectTransactionsList" parameterType="Transactions" resultMap="TransactionsResult">
+        <include refid="selectTransactionsVo"/>
+        <where>  
+            <if test="acctnbr != null "> and acctnbr = #{acctnbr}</if>
+            <if test="inpDate != null "> and inp_date = #{inpDate}</if>
+            <if test="inpTime != null "> and inp_time = #{inpTime}</if>
+            <if test="xtranno != null "> and xtranno = #{xtranno}</if>
+            <if test="billAmt != null "> and bill_amt = #{billAmt}</if>
+            <if test="org1Code != null  and org1Code != ''"> and org1_code = #{org1Code}</if>
+            <if test="orgNo != null  and orgNo != ''"> and org_no = #{orgNo}</if>
+            <if test="custIsn != null  and custIsn != ''"> and cust_isn = #{custIsn}</if>
+            <if test="cardStatusTxt != null  and cardStatusTxt != ''"> and card_status_txt = #{cardStatusTxt}</if>
+        </where>
+    </select>
+    
+    <select id="selectTransactionsByAcctnbr" parameterType="Long" resultMap="TransactionsResult">
+        <include refid="selectTransactionsVo"/>
+        where acctnbr = #{acctnbr}
+    </select>
+
+    <insert id="insertTransactions" parameterType="Transactions">
+        insert into transactions
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="acctnbr != null">acctnbr,</if>
+            <if test="inpDate != null">inp_date,</if>
+            <if test="inpTime != null">inp_time,</if>
+            <if test="xtranno != null">xtranno,</if>
+            <if test="billAmt != null">bill_amt,</if>
+            <if test="org1Code != null">org1_code,</if>
+            <if test="orgNo != null">org_no,</if>
+            <if test="custIsn != null">cust_isn,</if>
+            <if test="cardStatusTxt != null">card_status_txt,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="acctnbr != null">#{acctnbr},</if>
+            <if test="inpDate != null">#{inpDate},</if>
+            <if test="inpTime != null">#{inpTime},</if>
+            <if test="xtranno != null">#{xtranno},</if>
+            <if test="billAmt != null">#{billAmt},</if>
+            <if test="org1Code != null">#{org1Code},</if>
+            <if test="orgNo != null">#{orgNo},</if>
+            <if test="custIsn != null">#{custIsn},</if>
+            <if test="cardStatusTxt != null">#{cardStatusTxt},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTransactions" parameterType="Transactions">
+        update transactions
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="inpDate != null">inp_date = #{inpDate},</if>
+            <if test="inpTime != null">inp_time = #{inpTime},</if>
+            <if test="xtranno != null">xtranno = #{xtranno},</if>
+            <if test="billAmt != null">bill_amt = #{billAmt},</if>
+            <if test="org1Code != null">org1_code = #{org1Code},</if>
+            <if test="orgNo != null">org_no = #{orgNo},</if>
+            <if test="custIsn != null">cust_isn = #{custIsn},</if>
+            <if test="cardStatusTxt != null">card_status_txt = #{cardStatusTxt},</if>
+        </trim>
+        where acctnbr = #{acctnbr}
+    </update>
+
+    <delete id="deleteTransactionsByAcctnbr" parameterType="Long">
+        delete from transactions where acctnbr = #{acctnbr}
+    </delete>
+
+    <delete id="deleteTransactionsByAcctnbrs" parameterType="String">
+        delete from transactions where acctnbr in 
+        <foreach item="acctnbr" collection="array" open="(" separator="," close=")">
+            #{acctnbr}
+        </foreach>
+    </delete>
+</mapper>
