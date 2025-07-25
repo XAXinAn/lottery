@@ -119,15 +119,16 @@ public class TransactionsServiceImpl implements ITransactionsService
             int size = prizes.size();
             //根据金额区间分组
             List<List<Transactions>> transactionsGroupbyAmountRange = new ArrayList<>();
-            result = new ArrayList<>();
+            result.clear();
             for (Prize prize : prizes) {
                 List<BigDecimal> billAmounts = new ArrayList<>();
                 List<Transactions> temp = new ArrayList<>();
                 //取出金额区间内的交易记录
                 List<Transactions> transactionsList = transactionsMapper.selectTransactionsByAmountRange(prize);
                 //随机打乱交易记录
+                Transactions maxBillAmountTransaction;
                 do {
-                    if (prize == prizes.get(prizes.size() - 1)){
+                    if (prize == prizes.get(prizes.size() - 1)) {
                         for (Transactions transaction : temp) {
                             transactionsMapper.updateOrg1MaxWinStatusTo0(transaction.getOrg1Code());
                         }
@@ -145,52 +146,26 @@ public class TransactionsServiceImpl implements ITransactionsService
                         transaction = shuffledList.get(0);
                         //判断是否符合中奖 客户内码不存在于所有中奖纪录 网点号不存在于本次中奖记录
                         if (!transactionsMapper.existsCust(transaction.getCustIsn()) && !transactionsMapper.existsOrgNo(transaction.getOrgNo())) {
-                            //判断是否是最高奖
-                            //getOrg1Status中0为未中奖，1为待定，2为确定
-                            if (transaction.getBillAmt().doubleValue() >= prizes.get(prizes.size() - 1).getMinAmount() && transaction.getBillAmt().doubleValue() < prizes.get(prizes.size() - 1).getMaxAmount() && transactionsMapper.getOrg1Status(transaction.getOrg1Code()) == 0) {
-                                temp.add(transaction);
-                                billAmounts.add(transaction.getBillAmt());
-                                transactionsMapper.updateOrg1MaxWinStatusTo1(transaction.getOrg1Code());
-                                transactionsList.remove(transaction);
-                                cnt++;
-                            } else if (!(transaction.getBillAmt().doubleValue() >= prizes.get(prizes.size() - 1).getMinAmount() && transaction.getBillAmt().doubleValue() < prizes.get(prizes.size() - 1).getMaxAmount())) {
-                                temp.add(transaction);
-                                billAmounts.add(transaction.getBillAmt());
-                                transactionsList.remove(transaction);
-                                cnt++;
-                            }
+                            temp.add(transaction);
+                            billAmounts.add(transaction.getBillAmt());
+                            transactionsList.remove(transaction);
+                            cnt++;
                         }
                     }
                     sum = getBillAmtsSum(billAmounts);
-                } while (sum < prize.getBudget() * 0.95 || sum > prize.getBudget());
+                    maxBillAmountTransaction = transactionsList.stream().max(Comparator.comparing(Transactions::getBillAmt)).get();
+                } while (sum < prize.getBudget() * 0.95 || sum > prize.getBudget() || transactionsMapper.getOrg1Status(maxBillAmountTransaction.getOrg1Code()) == 1);
                 result.addAll(temp);
                 tempResult.addAll(temp);
                 for (Transactions transaction : result) {
                     transactionsMapper.insertWinTransactions(new WinTransactions(transaction, time));
-                    if (prize == prizes.get(prizes.size() - 1)){
+                    if (prize == prizes.get(prizes.size() - 1)) {
                         transactionsMapper.updateOrg1MaxWinStatusTo2(transaction.getOrg1Code());
                     }
                 }
             }
         }
         return tempResult;
-    }
-
-    /**
-     * 将账单金额列表转换为字符串并打印出来
-     *
-     * @param billAmts 账单金额列表，每个金额以BigDecimal类型表示
-     */
-    public void print(List<BigDecimal> billAmts){
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < billAmts.size(); i++) {
-            sb.append(billAmts.get(i));
-            if (i < billAmts.size() - 1) {
-                sb.append(", ");
-            }
-        }
-        String result = sb.toString();
-        System.out.println(result);
     }
 
     /**
