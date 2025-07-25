@@ -1,11 +1,10 @@
 package com.ruoyi.lottery.service.impl;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import com.ruoyi.lottery.domain.Prize;
+import com.ruoyi.lottery.domain.WinTransactions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ruoyi.lottery.mapper.TransactionsMapper;
@@ -113,51 +112,68 @@ public class TransactionsServiceImpl implements ITransactionsService
     public List<Transactions> lottery(List<Prize> prizes) {
         //获得当前的轮次
         int time = transactionsMapper.getMaxTime() + 1;
-        if(time == 1) {
+        double sum = 0;
+        List<Transactions> result = new ArrayList<>();
+        List<Transactions> tempResult = new ArrayList<>();
+        if (time == 1) {
             int size = prizes.size();
             //根据金额区间分组
             List<List<Transactions>> transactionsGroupbyAmountRange = new ArrayList<>();
-
+            result = new ArrayList<>();
             for (Prize prize : prizes) {
-                //创建返回值对象
-                List<Transactions> result = new ArrayList<>();
-                List<BigDecimal> billAmts = new ArrayList<>();
+                List<BigDecimal> billAmounts = new ArrayList<>();
+                List<Transactions> temp = new ArrayList<>();
                 //取出金额区间内的交易记录
                 List<Transactions> transactionsList = transactionsMapper.selectTransactionsByAmountRange(prize);
                 //随机打乱交易记录
                 do {
+                    if (prize == prizes.get(prizes.size() - 1)){
+                        for (Transactions transaction : temp) {
+                            transactionsMapper.updateOrg1MaxWinStatusTo0(transaction.getOrg1Code());
+                        }
+                    }
+                    transactionsList.addAll(temp);
+                    temp.clear();
+                    result.clear();
+                    billAmounts.clear();
                     List<Transactions> shuffledList = new ArrayList<>(transactionsList);
                     Collections.shuffle(shuffledList);
                     int cnt = 0;
+                    Transactions transaction = null;
                     for (int i = 0; i < transactionsList.size() && cnt < prize.getNum(); i++) {
-                        Transactions transaction = shuffledList.get(i);
+                        Collections.shuffle(shuffledList);
+                        transaction = shuffledList.get(0);
                         //判断是否符合中奖 客户内码不存在于所有中奖纪录 网点号不存在于本次中奖记录
-                        if (!transactionsMapper.existsCust(transaction.getCustIsn())&&!transactionsMapper.existsOrgNo(transaction.getOrgNo())) {
-                            if(transaction.getBillAmt().doubleValue() >= prizes.getLast().getMinAmount() && transaction.getBillAmt().doubleValue() < prizes.getLast().getMaxAmount() && (transactionsMapper.getOrg1Status(transaction.getOrg1Code()) == 0)) {
-                                winPrize(transaction,time);
-                                transactionsMapper.updateOrg1MaxWinStatus(transaction.getOrg1Code());//支行的最大中奖状态设为1
+                        if (!transactionsMapper.existsCust(transaction.getCustIsn()) && !transactionsMapper.existsOrgNo(transaction.getOrgNo())) {
+                            //判断是否是最高奖
+                            //getOrg1Status中0为未中奖，1为待定，2为确定
+                            if (transaction.getBillAmt().doubleValue() >= prizes.get(prizes.size() - 1).getMinAmount() && transaction.getBillAmt().doubleValue() < prizes.get(prizes.size() - 1).getMaxAmount() && transactionsMapper.getOrg1Status(transaction.getOrg1Code()) == 0) {
+                                temp.add(transaction);
+                                billAmounts.add(transaction.getBillAmt());
+                                transactionsMapper.updateOrg1MaxWinStatusTo1(transaction.getOrg1Code());
+                                transactionsList.remove(transaction);
                                 cnt++;
-                            } else if (!(transaction.getBillAmt().doubleValue() >= prizes.getLast().getMinAmount() && transaction.getBillAmt().doubleValue() < prizes.getLast().getMaxAmount())) {
-                                winPrize(transaction,time);
+                            } else if (!(transaction.getBillAmt().doubleValue() >= prizes.get(prizes.size() - 1).getMinAmount() && transaction.getBillAmt().doubleValue() < prizes.get(prizes.size() - 1).getMaxAmount())) {
+                                temp.add(transaction);
+                                billAmounts.add(transaction.getBillAmt());
+                                transactionsList.remove(transaction);
                                 cnt++;
                             }
                         }
                     }
-                } while (true);
+                    sum = getBillAmtsSum(billAmounts);
+                } while (sum < prize.getBudget() * 0.95 || sum > prize.getBudget());
+                result.addAll(temp);
+                tempResult.addAll(temp);
+                for (Transactions transaction : result) {
+                    transactionsMapper.insertWinTransactions(new WinTransactions(transaction, time));
+                    if (prize == prizes.get(prizes.size() - 1)){
+                        transactionsMapper.updateOrg1MaxWinStatusTo2(transaction.getOrg1Code());
+                    }
+                }
             }
-            return null;
         }
-        return null;
-    }
-
-    /**
-     * 中奖处理
-     *
-     * @param transaction 交易对象
-     */
-    public void winPrize(Transactions transaction,int time) {
-        transactionsMapper.insertWinTransactions(transaction,time);//新增中奖记录
-        transactionsMapper.deleteTransactionsByXtranno(transaction.getXtranno());//删除transactions表中的交易记录
+        return tempResult;
     }
 
     /**

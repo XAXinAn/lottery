@@ -1,9 +1,11 @@
 package com.ruoyi.lottery.mapper;
 
 import java.util.List;
+import java.util.Map;
 
 import com.ruoyi.lottery.domain.Prize;
 import com.ruoyi.lottery.domain.Transactions;
+import com.ruoyi.lottery.domain.WinTransactions;
 
 /**
  * 信用卡交易记录Mapper接口
@@ -111,7 +113,9 @@ public interface TransactionsMapper
      * 更新org1_max_win表中指定支行的最大中奖状态为已中奖（1）
      * @param org1Code 支行号
      */
-    public void updateOrg1MaxWinStatus(String org1Code);
+    public void updateOrg1MaxWinStatusTo0(String org1Code);
+    public void updateOrg1MaxWinStatusTo1(String org1Code);
+    public void updateOrg1MaxWinStatusTo2(String org1Code);
 
     /**
      * 根据交易序号删除transactions表中的记录
@@ -124,8 +128,7 @@ public interface TransactionsMapper
      * 新增中奖记录到win_transactions表
      * 表的第一列记录当前轮次time
      *
-     * @param transaction 交易记录
-     * @param time 轮次
+     * @param transactions 交易记录
      */
-    public void insertWinTransactions(Transactions transaction,int time);
+    public void insertWinTransactions(WinTransactions transactions);
 }

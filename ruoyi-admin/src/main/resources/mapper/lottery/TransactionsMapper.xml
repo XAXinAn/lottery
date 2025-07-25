@@ -25,10 +25,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="selectTransactionsByAmountRange" parameterType="Prize" resultMap="TransactionsResult">
-        <include refid="selectTransactionsVo"/>
+        SELECT acctnbr, inp_date, inp_time, xtranno, bill_amt, org1_code, org_no, cust_isn, card_status_txt
+        FROM transactions t
         <where>
             <if test="minAmount != null"> and bill_amt >= #{minAmount}</if>
             <if test="maxAmount != null"> and bill_amt &lt; #{maxAmount}</if>
+            and not exists (
+            select 1
+            from win_transactions w
+            where w.xtranno = t.xtranno
+            )
         </where>
     </select>
 
@@ -37,18 +43,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <select id="getOrg1Status" resultType="int">
-        SELECT status from org1_status where org1_code = #{org1Code}
+        SELECT status from org1_max_win where org1_code = #{org1Code}
     </select>
 
     <select id="existsCust" parameterType="string" resultType="boolean">
         SELECT CASE WHEN EXISTS (
-            SELECT 1 FROM transactions WHERE cust_isn = #{custIsn}
+            SELECT 1 FROM win_transactions WHERE cust_isn = #{custIsn}
         ) THEN TRUE ELSE FALSE END
     </select>
 
     <select id="existsOrgNo" parameterType="string" resultType="boolean">
         SELECT CASE WHEN EXISTS (
-            SELECT 1 FROM transactions WHERE org_no = #{orgNo}
+            SELECT 1 FROM win_transactions WHERE org_no = #{orgNo}
         ) THEN TRUE ELSE FALSE END
     </select>
 
@@ -125,9 +131,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <!-- 更新org1_max_win表中指定支行的最大中奖状态为已中奖（1） -->
-    <update id="updateOrg1MaxWinStatus" parameterType="string">
+    <update id="updateOrg1MaxWinStatusTo0" parameterType="string">
+        UPDATE org1_max_win
+        SET status = 0
+        WHERE org1_code = #{org1Code}
+    </update>
+
+    <update id="updateOrg1MaxWinStatusTo1" parameterType="String">
         UPDATE org1_max_win
         SET status = 1
+        WHERE org1_code = #{org1Code}
+    </update>
+
+    <update id="updateOrg1MaxWinStatusTo2" parameterType="String">
+        UPDATE org1_max_win
+        SET status = 2
         WHERE org1_code = #{org1Code}
     </update>
 
@@ -138,8 +156,29 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <!-- 新增中奖记录到win_transactions表，表的第一列记录当前轮次time -->
-    <insert id="insertWinTransactions" parameterType="map">
-        INSERT INTO win_transactions (time, acctnbr, inp_date, inp_time, xtranno, bill_amt, org1_code, org_no, cust_isn, card_status_txt)
-        VALUES (#{time}, #{transaction.acctnbr}, #{transaction.inpDate}, #{transaction.inpTime}, #{transaction.xtranno}, #{transaction.billAmt}, #{transaction.org1Code}, #{transaction.orgNo}, #{transaction.custIsn}, #{transaction.cardStatusTxt})
+    <insert id="insertWinTransactions" parameterType="WinTransactions">
+        INSERT INTO win_transactions (
+            time,
+            acctnbr,
+            inp_date,
+            inp_time,
+            xtranno,
+            bill_amt,
+            org1_code,
+            org_no,
+            cust_isn,
+            card_status_txt
+        ) VALUES (
+            #{time},
+            #{transaction.acctnbr},
+            #{transaction.inpDate},
+            #{transaction.inpTime},
+            #{transaction.xtranno},
+            #{transaction.billAmt},
+            #{transaction.org1Code},
+            #{transaction.orgNo},
+            #{transaction.custIsn},
+            #{transaction.cardStatusTxt}
+        )
     </insert>
 </mapper>
