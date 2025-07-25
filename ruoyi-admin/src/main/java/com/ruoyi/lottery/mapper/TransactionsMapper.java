@@ -83,6 +83,49 @@ public interface TransactionsMapper
      */
     public int getMaxTime();
 
-
+    /**
+     * 检查transactions是否存在客户信息
+     *
+     * @param custIsn 客户标内码
+     * @return true表示存在，false表示不存在
+     */
     public boolean existsCust(String custIsn);
+
+    /**
+     * 检查transactions是否存在网点信息
+     *
+     * @param orgNo 网点号
+     * @return true表示存在，false表示不存在
+     */
+    public boolean existsOrgNo(String orgNo);
+
+    /**
+     * 获取org1_max_win表中指定支行的最大中奖状态
+     *
+     * @param org1Code 支行号
+     * @return 0表示未中奖，1表示已中奖
+     */
+    public int getOrg1Status(String org1Code);
+
+    /**
+     * 更新org1_max_win表中指定支行的最大中奖状态为已中奖（1）
+     * @param org1Code 支行号
+     */
+    public void updateOrg1MaxWinStatus(String org1Code);
+
+    /**
+     * 根据交易序号删除transactions表中的记录
+     *
+     * @param xtranno 交易序号
+     */
+    public void deleteTransactionsByXtranno(Long xtranno);
+
+    /**
+     * 新增中奖记录到win_transactions表
+     * 表的第一列记录当前轮次time
+     *
+     * @param transaction 交易记录
+     * @param time 轮次
+     */
+    public void insertWinTransactions(Transactions transaction,int time);
 }

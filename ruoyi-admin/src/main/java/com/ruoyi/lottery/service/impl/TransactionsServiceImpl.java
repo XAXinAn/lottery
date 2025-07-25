@@ -115,8 +115,6 @@ public class TransactionsServiceImpl implements ITransactionsService
         int time = transactionsMapper.getMaxTime() + 1;
         if(time == 1) {
             int size = prizes.size();
-            //取出所有的交易记录
-//        List<Transactions> transactions =  transactionsMapper.selectAllTransactions();
             //根据金额区间分组
             List<List<Transactions>> transactionsGroupbyAmountRange = new ArrayList<>();
 
@@ -132,20 +130,41 @@ public class TransactionsServiceImpl implements ITransactionsService
                     Collections.shuffle(shuffledList);
                     int cnt = 0;
                     for (int i = 0; i < transactionsList.size() && cnt < prize.getNum(); i++) {
-                        Collections.shuffle(shuffledList);
-                        Transactions transaction = shuffledList.get(0);
+                        Transactions transaction = shuffledList.get(i);
                         //判断是否符合中奖 客户内码不存在于所有中奖纪录 网点号不存在于本次中奖记录
-                        if (!transactionsMapper.existsCust(transaction.getCustIsn())) {
-
+                        if (!transactionsMapper.existsCust(transaction.getCustIsn())&&!transactionsMapper.existsOrgNo(transaction.getOrgNo())) {
+                            if(transaction.getBillAmt().doubleValue() >= prizes.getLast().getMinAmount() && transaction.getBillAmt().doubleValue() < prizes.getLast().getMaxAmount() && (transactionsMapper.getOrg1Status(transaction.getOrg1Code()) == 0)) {
+                                winPrize(transaction,time);
+                                transactionsMapper.updateOrg1MaxWinStatus(transaction.getOrg1Code());//支行的最大中奖状态设为1
+                                cnt++;
+                            } else if (!(transaction.getBillAmt().doubleValue() >= prizes.getLast().getMinAmount() && transaction.getBillAmt().doubleValue() < prizes.getLast().getMaxAmount())) {
+                                winPrize(transaction,time);
+                                cnt++;
+                            }
                         }
                     }
                 } while (true);
             }
             return null;
         }
+        return null;
     }
 
-    //打印billAments内的金额
+    /**
+     * 中奖处理
+     *
+     * @param transaction 交易对象
+     */
+    public void winPrize(Transactions transaction,int time) {
+        transactionsMapper.insertWinTransactions(transaction,time);//新增中奖记录
+        transactionsMapper.deleteTransactionsByXtranno(transaction.getXtranno());//删除transactions表中的交易记录
+    }
+
+    /**
+     * 将账单金额列表转换为字符串并打印出来
+     *
+     * @param billAmts 账单金额列表，每个金额以BigDecimal类型表示
+     */
     public void print(List<BigDecimal> billAmts){
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < billAmts.size(); i++) {
@@ -156,5 +175,23 @@ public class TransactionsServiceImpl implements ITransactionsService
         }
         String result = sb.toString();
         System.out.println(result);
+    }
+
+    /**
+     * 将账单金额列表相加输出总金额
+     *
+     * @param billAmts 账单金额列表，每个金额以BigDecimal类型表示
+     */
+    public double getBillAmtsSum(List<BigDecimal> billAmts) {
+        if (billAmts == null || billAmts.isEmpty()) {
+            return 0.0; // 如果列表为空或null，返回0.0
+        }
+
+        BigDecimal sum = BigDecimal.ZERO; // 初始化总和为0
+        for (BigDecimal amount : billAmts) {
+            sum = sum.add(amount); // 将每个金额加到总和中
+        }
+
+        return sum.doubleValue(); // 返回总和的double值
     }
 }
